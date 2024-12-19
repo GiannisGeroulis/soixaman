@@ -1,7 +1,7 @@
 import './App.css'
 import { Button } from './components/ui/button'
 import { createClient } from '@supabase/supabase-js'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Input } from './components/ui/input'
 import { Label } from './components/ui/label'
 import { DatePickerDemo } from './Calendar'
@@ -20,6 +20,7 @@ const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhb
 
 
 function App() {
+  const [matches,set_Matches]=useState(null)
   const [toggle_Register,set_Toggle_Register]=useState(false)
   const [toggle_Login,set_Toggle_Login]=useState(true)
   const [error,set_Error]=useState(null)
@@ -111,18 +112,23 @@ function App() {
       login_User()
     }
    }
-   function handle_Click() 
-   {
-    console.log("gemista")
+   async function fetch_Games() {
+    const { data, error } = await supabase
+    .from('matches')
+    .select()
+    set_Matches(data)
+    
    }
-
-
-
+   useEffect(() => {
+    fetch_Games();
+   }, [])
+   
   
 
   return (
     <div>
       {/*Register Page */
+      
       toggle_Register &&
       <div className="fixed top-0 left-0 w-full h-full z-[10000] bg-black bg-opacity-60">
       <div className="fixed w-[55%] h-[80%] z-[10000]  top-12 left-[22%] bg-slate-100  flex">
@@ -222,21 +228,90 @@ function App() {
         
       </div>
       {/*Body*/}
+      
       <div className="bg-gray-200 fixed h-full w-full left-0 top-16">
       
-       <div className="font-bold text-2xl text-gray-800 mt-2">ΑΓΩΝΕΣ</div>
+       
         {/*Matches body */}
-        <div className="bg-white  w-[95%] h-[80%] rounded-lg mx-auto mt-2">
-          <div className=" w-full h-10 border-t pt-2">
-            <div className="bg-blue-400 " onClick={handle_Click}>
-            ΛΕΒΑΔΕΙΑΚΟΣ
-            ΠΑΝΑΘΗΝΑΙΚΟΣ
+        <div className="bg-white w-[95%] h-[80%] rounded-lg mx-auto mt-2">
+        
+          <div className=" w-full h-10 border-b pt-2">ΑΓΩΝΕΣ</div>
+          { matches && (
+            matches.map(match => (
+              
+          <div className=" w-full h-13 flex p-4 border-b ">
+            <div className=" h-full w-[15%] flex-col " >
+              <div>
+                {match.date}
+              </div>
+              <div>
+                {match.time}
+              </div>
             </div>
-            
-          </div>
-          <div className=" w-full h-10 border-t pt-2">ΑΓΩΝΕΣ</div>
-         
+            <div className=" h-full w-[25%] flex-col " >
+              <div>
+                {match.h_Team}
+              </div>
+              <div>
+                {match.a_Team}
+              </div>
+            </div>
+            <div className="text-sm h-full w-[20%] flex-col " >
+            <div className=" h-5 flex  justify-around text-xs border-r font-bold">
+                <div className=" ">1</div>
+                <div>X</div>
+                <div>2</div>
+              </div>
+              
+              
+              <div className=" h-7 flex justify-around  border-r">
+                
+                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.asos_Odd}</Button>
+                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.x_Odd}</Button>
+                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.diplo_Odd}</Button>
+              </div>
+              
+              
+              
+            </div>
+            <div className="text-sm h-full w-[20%] flex-col border-r font-bold" >
+            <div className=" h-5 flex  justify-around text-xs ">
+                <div className=" ">OVER2.5</div>
+                <div>UNDER2.5</div>
+                
+              </div>
+              
+              
+              <div className=" h-7 flex  justify-around">
+                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.over25_Odd}</Button>
+                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.under25_Odd}</Button>
+                
+              </div>
+              
+              
+              
+            </div>
+            <div className="text-sm h-full w-[20%] flex-col font-bold" >
+            <div className=" h-5 flex  justify-around text-xs">
+                <div className=" ">GG</div>
+                <div>NG</div>
+                
+              </div>
+              
+              
+              <div className=" h-7 flex  justify-around">
+                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.gg_Odd}</Button>
+                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.ng_Odd}</Button>
+                
+              </div>
+              
+              
+            </div>
+      
           
+          </div>
+          )))}
+      
         </div>
         
       </div>
