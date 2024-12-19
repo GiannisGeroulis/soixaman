@@ -66,7 +66,15 @@ function App() {
         }
       }
     )
-    
+    insert_User_Table(data.user.id)
+   }
+   async function insert_User_Table(r_id)
+   {
+     const { error } = await supabase
+     .from('users')
+     .insert({ id: r_id } )
+     
+
    }
    async function fetch_Balance (user)
    {
