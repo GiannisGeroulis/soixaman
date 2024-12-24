@@ -6,7 +6,7 @@ import { Input } from './components/ui/input'
 import { Label } from './components/ui/label'
 import { DatePickerDemo } from './Calendar'
 import { SelectScrollable } from './Select_Gender'
-import { setDate } from 'date-fns'
+import { setDate, setSeconds } from 'date-fns'
 import { TriangleAlert } from "lucide-react"
 import { Dropdown_balance } from './Dropdown_balance'
 
@@ -20,6 +20,7 @@ const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhb
 
 
 function App() {
+  const [bet_List,set_Bet_List]=useState([])
   const [matches,set_Matches]=useState(null)
   const [toggle_Register,set_Toggle_Register]=useState(false)
   const [toggle_Login,set_Toggle_Login]=useState(true)
@@ -67,6 +68,12 @@ function App() {
         }
       }
     )
+    if(!error)
+    {
+      set_Toggle_Register(false)
+      set_Toggle_Login(true)
+    }
+    
     insert_User_Table(data.user.id)
    }
    async function insert_User_Table(r_id)
@@ -123,13 +130,37 @@ function App() {
     fetch_Games();
    }, [])
    
-  
+  function handle_Odd_Button (e) 
+  {
+    const name = e.target.name;
+    const odd = parseFloat(e.target.innerText);
+    const id = e.target.id;
 
+    if (bet_List.some((item) => (item.name === name) && (item.id === id))) {
+      // Αν το στοιχείο υπάρχει ήδη, το αφαιρούμε
+      e.target.style.backgroundColor = "#f3f4f6"
+      e.target.style.color="#0066cc"
+      const updated_List = bet_List.filter((item) => !(item.name === name && item.id === id));
+      set_Bet_List(updated_List); // Ενημέρωση state με νέο array
+    } else {
+     e.target.style.backgroundColor = "#0066cc"
+     e.target.style.color = "white"
+      // Αν δεν υπάρχει, το προσθέτουμε
+      const full_Odd = {
+        odd: odd,
+        name: name,
+        id: id,
+      };
+      set_Bet_List([...bet_List, full_Odd]); // Προσθήκη νέου στοιχείου στο state
+    }
+  }    
+  
   return (
+    
     <div>
       {/*Register Page */
       
-      toggle_Register &&
+      toggle_Register &&  
       <div className="fixed top-0 left-0 w-full h-full z-[10000] bg-black bg-opacity-60">
       <div className="fixed w-[55%] h-[80%] z-[10000]  top-12 left-[22%] bg-slate-100  flex">
       <div className="w-1/2 h-full bg-[#0066cc]">sdaf</div>
@@ -140,7 +171,7 @@ function App() {
         </div>
         <div className="mt-3  ">
         <div className=" w-1/2 mx-auto text-left font-bold text-sm">Email</div>
-        <Input name="email" onChange={handleChange} className=" focus-visible:ring-0 outline-none w-1/2 mx-auto mt-1 rounded-lg" placeholder="π.χ. someone@gmail.com"></Input>
+        <Input name="email" onChange={handleChange} className="  focus-visible:ring-0 outline-none w-1/2 mx-auto mt-1 rounded-lg" placeholder="π.χ. someone@gmail.com"></Input>
         </div>
         <div className="mt-3  ">
         <div className=" w-1/2 mx-auto text-left font-bold text-sm">Κωδικός</div>
@@ -229,11 +260,12 @@ function App() {
       </div>
       {/*Body*/}
       
-      <div className="bg-gray-200 fixed h-full w-full left-0 top-16">
+      <div className="bg-gray-200 fixed h-full w-full left-0 top-16 flex">
       
        
         {/*Matches body */}
-        <div className="bg-white w-[95%] h-[80%] rounded-lg mx-auto mt-2">
+        
+        <div className="bg-white w-[75%] h-[90%] rounded-lg mx-auto mt-2">
         
           <div className=" w-full h-10 border-b pt-2">ΑΓΩΝΕΣ</div>
           { matches && (
@@ -266,9 +298,9 @@ function App() {
               
               <div className=" h-7 flex justify-around  border-r">
                 
-                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.asos_Odd}</Button>
-                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.x_Odd}</Button>
-                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.diplo_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="asos" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.asos_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="x" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.x_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="diplo" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.diplo_Odd}</Button>
               </div>
               
               
@@ -283,8 +315,8 @@ function App() {
               
               
               <div className=" h-7 flex  justify-around">
-                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.over25_Odd}</Button>
-                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.under25_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="over25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.over25_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="under25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.under25_Odd}</Button>
                 
               </div>
               
@@ -300,8 +332,8 @@ function App() {
               
               
               <div className=" h-7 flex  justify-around">
-                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.gg_Odd}</Button>
-                <Button className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.ng_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="gg" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.gg_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="ng" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.ng_Odd}</Button>
                 
               </div>
               
@@ -312,6 +344,19 @@ function App() {
           </div>
           )))}
       
+        </div>
+        
+       
+       
+       
+        <div className="bg-white w-[20%] h-[90%] mr-auto rounded-lg mt-2">
+        {bet_List.map((choice, index) => (
+          <div key={index}>
+            Odd: {choice.odd}, Name: {choice.name}, ID : {choice.id}
+          </div>
+        ))}
+        
+     
         </div>
         
       </div>
