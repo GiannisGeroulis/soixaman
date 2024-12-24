@@ -56,7 +56,7 @@ function App() {
    {
     const { data, error } = await supabase.auth.signUp(
       {
-        redirectTo: "https://giannisgeroulis.github.io/soixaman/",
+        
         email: formData.email,
         password: formData.password,
         options: {
@@ -68,6 +68,8 @@ function App() {
           }
         },
         
+      } , {
+        redirectTo: "https://giannisgeroulis.github.io/soixaman/"
       }
     )
     if(!error)
