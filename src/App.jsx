@@ -68,7 +68,9 @@ function App() {
           redirectTo: "https://giannisgeroulis.github.io/soixaman/"
         }
       }
+      
     )
+    console.log(data)
     if(!error)
     {
       set_Toggle_Register(false)
