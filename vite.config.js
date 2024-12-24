@@ -5,7 +5,7 @@ import { defineConfig } from "vite"
 
 
 export default defineConfig({
-  base: '/soixaman/',
+  
   plugins: [react()],
   resolve: {
     alias: {

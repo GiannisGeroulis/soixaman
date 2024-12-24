@@ -52,8 +52,14 @@ function App() {
        
      })
    }
+   
+    
    async function register_User ()
    {
+    const currentHost = window.location.origin; // Παίρνει το origin δυναμικά
+    const redirectURL = `${currentHost}/soixaman/`;
+    console.log(redirectURL , "ASfds")
+    
     const { data, error } = await supabase.auth.signUp(
       {
         email: formData.email,
@@ -65,7 +71,7 @@ function App() {
             gender: formData.gender,
             dateob: date
           },
-          redirectTo: "https://giannisgeroulis.github.io/soixaman/"
+          redirectTo: redirectURL
         }
       }
       
