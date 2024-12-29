@@ -245,13 +245,13 @@ function App() {
   async function update_Balance (new_Balance)
   {
    
-   console.log(new_Balance)
+  
    const {data , error } = await supabase
    .from('users')
    .update({ balance: new_Balance })
    .eq('id', user.id )
-   .select()
-   console.log(data)
+   
+   
    
    
   }
