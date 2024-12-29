@@ -69,7 +69,9 @@ export function Dropdown_balance(text) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="bg-transparent hover:border-none w-18 h-7  ring-0 focus:outline-none font-semibold text-lg" variant="link">{text.text}<ChevronDown></ChevronDown></Button>
+        <Button className="bg-transparent hover:border-none w-18 h-7  ring-0 focus:outline-none font-semibold text-lg" variant="link">
+        {text?.text !== null ? text.text.toFixed(2) : "--"}
+          <ChevronDown></ChevronDown></Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" arrow="true">
         

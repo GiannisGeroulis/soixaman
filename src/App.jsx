@@ -9,6 +9,7 @@ import { SelectScrollable } from './Select_Gender'
 import { setDate, setSeconds } from 'date-fns'
 import { TriangleAlert } from "lucide-react"
 import { Dropdown_balance } from './Dropdown_balance'
+import dayjs from 'dayjs';
 
 
 const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppanBmdWJ1Y3RzbmRqaWZvaWptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQyOTY3NzAsImV4cCI6MjA0OTg3Mjc3MH0.-ULAU7RraewQKid5LDYXMtGoo5FK8J6_YLIE9PcsqGA')
@@ -20,6 +21,10 @@ const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhb
 
 
 function App() {
+  const [bet_List_Istoriko,set_Bet_List_Istoriko]=useState([])
+  const [banner_Istoriko,set_Banner_Istoriko]=useState(false)
+  const [banner_Soixima,set_Banner_Soixima]=useState(true)
+  const [bet_Odd,set_Bet_Odd]=useState(1)
   const [bet_List,set_Bet_List]=useState([])
   const [matches,set_Matches]=useState(null)
   const [toggle_Register,set_Toggle_Register]=useState(false)
@@ -33,8 +38,9 @@ function App() {
   function handle_Login() {set_Toggle_Login(!toggle_Login)}
   const [date,set_Date]=useState(null)
   const [gender,set_Gender]=useState("")
+  const [istoriko,set_Istoriko]=useState([])
   const [formData,setFormData] = useState({
-    email:"",name:"",surname:"",password:""
+    email:"",name:"",surname:"",password:"",input_Bet:1
    })
    {/*console.log(formData)
    console.log("date : ",date)
@@ -56,9 +62,8 @@ function App() {
     
    async function register_User ()
    {
-    const currentHost = window.location.origin; // Παίρνει το origin δυναμικά
-    const redirectURL = `${currentHost}/soixaman/`;
-    console.log(redirectURL , "ASfds")
+    
+    
     
     const { data, error } = await supabase.auth.signUp(
       {
@@ -71,7 +76,8 @@ function App() {
             gender: formData.gender,
             dateob: date
           },
-          redirectTo: redirectURL
+          
+
         }
       }
       
@@ -115,12 +121,111 @@ function App() {
     set_User(data.user)
     set_Greeting(true)
     fetch_Balance(data.user)
+    fetch_Istoriko(data.user)
     }
     else if(error)
     {
       set_Error(error)
     }
    }
+   async function fetch_Istoriko(user) {
+    // 1α) Μηδενίζουμε προσωρινά ή όχι (ανάλογα τι θέλεις)
+    set_Bet_List_Istoriko([]);
+  
+    // 1β) Παίρνουμε όλα τα bets για τον χρήστη
+    const { data: betsData, error } = await supabase
+      .from('bets')
+      .select()
+      .eq('player_Id', user.id);
+  
+    if (error) {
+      console.error("fetch_Istoriko error:", error);
+      return;
+    }
+  
+    // 1γ) “Χτίζουμε” ένα νέο array με το σχήμα που θες (betId, items[])
+    const newBetListIstoriko = [];
+  
+    for (const bet of betsData) {
+      const betItems = [];
+      // Κάνουμε for στα choice_1..choice_8
+      for (let i = 1; i <= 8; i++) {
+        const choiceKey = `choice_${i}`;
+        if (bet[choiceKey]) {
+          // π.χ. "asos 12 1.35"
+          const [name, matchIdStr, valueOddStr] = bet[choiceKey].split(" ");
+          const matchId = parseFloat(matchIdStr);
+          const match = matches?.find(m => m.id === matchId);
+  
+          // Λογική για title, perigrafi
+          let title;
+          let perigrafi;
+
+          switch (name) {
+            case "asos":
+              title = match.h_Team;
+              perigrafi = "Αποτέλεσμα κανονική διάρκεια";
+              break;
+            case "x":
+              title = "Ισοπαλία";
+              perigrafi = "Αποτέλεσμα κανονική διάρκεια";
+              break;
+            case "diplo":
+              title = match.a_Team;
+              perigrafi = "Αποτέλεσμα κανονική διάρκεια";
+              break;
+            case "over25":
+              title = "Over 2.5";
+              perigrafi = "Goal Over/Under";
+              break;
+            case "under25":
+              title = "Under 2.5";
+              perigrafi = "Goal Over/Under";
+              break;
+            case "gg":
+              title = "Ναι(GG)";
+              perigrafi = "Να σκοράρουν και οι δυο ομάδες";
+              break;
+            case "ng":
+              title = "Οχι(NG)";
+              perigrafi = "Να σκοράρουν και οι δυο ομάδες";
+              break;
+            default:
+              // Αν καμιά από τις πιο πάνω τιμές δεν ταιριάζει,
+              // μπορείς να βάλεις ένα default κείμενο ή απλώς το name όπως είναι.
+              title = name;
+              perigrafi = "";
+              break;
+          }
+
+// Συνέχισε τη λογική σου χρησιμοποιώντας τα title, perigrafi
+
+  
+          betItems.push({
+            home_Team: match.h_Team,
+            away_Team: match.a_Team,
+            bet_Odd: bet.bet_Odd,
+            value: name,
+            value_Odd: parseFloat(valueOddStr).toFixed(2),
+            descr: perigrafi,
+            title: title,
+            bet_Id: bet.id,
+            bet_Amount: bet.bet_Amount,
+            created_At: bet.created_at
+          });
+        }
+      }
+  
+      // Στο τέλος προσθέτουμε κανονικά το στοιχείο στο array
+      newBetListIstoriko.push({
+        betId: bet.id,
+        items: betItems
+      });
+    }
+  
+    // 1δ) Ενημερώνουμε ΤΟ state (χωρίς push/splice)
+    set_Bet_List_Istoriko(newBetListIstoriko);
+  }
    const handle_Enter = (e) =>
    {
     if(e.key === "Enter")
@@ -141,28 +246,148 @@ function App() {
    
   function handle_Odd_Button (e) 
   {
+    let title=null;
+    let game = null;
+    let perigrafi = null;
     const name = e.target.name;
     const odd = parseFloat(e.target.innerText);
     const id = e.target.id;
+    matches.map(match => {
+      if(match.id === parseFloat(id))
+      {
+        game = match
+      }
+    }
+    )
+    if(name === "asos"){title=game.h_Team;perigrafi="Αποτέλεσμα κανονική διάρκεια"}else if (name === "x"){title="Ισοπαλία";perigrafi="Αποτέλεσμα κανονική διάρκεια"}else if (name === "diplo") {title=game.a_Team;perigrafi="Αποτέλεσμα κανονική διάρκεια"}
+    else if(name==="over25"){title="Over 2.5";perigrafi="Goal Over/Under"}else if(name==="under25"){title="Under 2.5";perigrafi="Goal Over/Under"}else if(name==="gg"){title="Ναι(GG)";perigrafi="Να σκοράρουν και οι δυο ομάδες"}else if(name==="ng"){title="Οχι(NG)";perigrafi="Να σκοράρουν και οι δυο ομάδες"}
+  
+    
+
 
     if (bet_List.some((item) => (item.name === name) && (item.id === id))) {
+      set_Bet_Odd((bet_Odd/odd).toFixed(2))
       // Αν το στοιχείο υπάρχει ήδη, το αφαιρούμε
       e.target.style.backgroundColor = "#f3f4f6"
       e.target.style.color="#0066cc"
       const updated_List = bet_List.filter((item) => !(item.name === name && item.id === id));
       set_Bet_List(updated_List); // Ενημέρωση state με νέο array
     } else {
+     set_Bet_Odd((bet_Odd*odd).toFixed(2))
      e.target.style.backgroundColor = "#0066cc"
      e.target.style.color = "white"
       // Αν δεν υπάρχει, το προσθέτουμε
       const full_Odd = {
+        home_Team: game.h_Team,
+        away_Team: game.a_Team,
         odd: odd,
         name: name,
         id: id,
+        title: title,
+        perigrafi: perigrafi
+
       };
       set_Bet_List([...bet_List, full_Odd]); // Προσθήκη νέου στοιχείου στο state
     }
   }    
+  async function handle_Bet() {
+    if (bet_List.length === 0) return;
+    const choicesObj = bet_List.reduce((acc, bet, index) => {
+      acc[`choice_${index + 1}`] = bet.name + " " + bet.id + " " + bet.odd;
+      return acc;
+    }, {});
+  
+    const { data, error } = await supabase
+      .from('bets')
+      .insert([
+        {
+          bet_Odd: bet_Odd,
+          player_Id: user.id,
+          bet_Amount: parseFloat(formData.input_Bet).toFixed(2),
+          ...choicesObj
+        }
+      ]);
+  
+    if (!error) {
+      // Αφού το insert πέτυχε, ανανέωσε το ιστορικό
+      fetch_Istoriko(user);
+      // Αν θέλεις, μπορείς και να “καθαρίσεις” τα τρέχοντα στοιχήματα
+      set_Bet_List([]);
+      set_Bet_Odd(1);
+    } else {
+      console.error("handle_Bet insert error:", error);
+    }
+  }
+  function fetch_Istoriko_Bet(bet_Id)
+  {
+  const bet_Items = [];
+    
+  // 1) Αν τα choice_1..choice_8 είναι μέσα σε bet_Id σαν object properties,
+  //    τότε μπορούμε να τα διατρέξουμε με έναν κλασικό for:
+
+  for (let i = 1; i <= 8; i++) {
+    let game =null
+    let perigrafi =null
+    let title=null
+    const choiceKey = `choice_${i}`;
+    if(bet_Id[choiceKey] !== null)
+    {
+      const [name,match_Id,value_Odd] = bet_Id[choiceKey].split(" ");
+      matches.map(match =>
+        {
+          if(match.id === parseFloat(match_Id)){game=match}
+        }
+        )
+      if(name === "asos"){title=game.h_Team;perigrafi="Αποτέλεσμα κανονική διάρκεια"}else if (name === "x"){title="Ισοπαλία";perigrafi="Αποτέλεσμα κανονική διάρκεια"}else if (name === "diplo") {title=game.a_Team;perigrafi="Αποτέλεσμα κανονική διάρκεια"}
+      else if(name==="over25"){title="Over 2.5";perigrafi="Goal Over/Under"}else if(name==="under25"){title="Under 2.5";perigrafi="Goal Over/Under"}else if(name==="gg"){title="Ναι(GG)";perigrafi="Να σκοράρουν και οι δυο ομάδες"}else if(name==="ng"){title="Οχι(NG)";perigrafi="Να σκοράρουν και οι δυο ομάδες"}
+        
+      const full_Info =
+      {
+        home_Team: game.h_Team,
+        away_Team: game.a_Team,
+        bet_Odd: bet_Id.bet_Odd,
+        value: name,
+        value_Odd: value_Odd ,
+        descr: perigrafi,
+        title: title,
+        bet_Id: bet_Id.id,
+        bet_Amount: bet_Id.bet_Amount,
+        created_At: bet_Id.created_at
+        
+      }
+      
+      bet_Items.push(full_Info)
+    
+    }
+    
+   
+  }
+  let index = bet_List_Istoriko.findIndex(item => item.betId === bet_Id.id);
+
+  if (index !== -1) {
+    // 2α) Αν υπάρχει, προσθέτουμε τα νέα full_Info
+    bet_List_Istoriko[index].items.push(...betItems);
+  } else {
+    // 2β) Αν δεν υπάρχει, το σπρώχνουμε στο ΤΕΛΟΣ του πίνακα
+    bet_List_Istoriko.push({
+      betId: bet_Id.id,
+      items: bet_Items
+    });
+  }
+
+  }
+  function handle_Banner_Soixima()
+  {
+    set_Banner_Soixima(true)
+    set_Banner_Istoriko(false)
+  }
+  function handle_Banner_Istoriko()
+  {
+    
+    set_Banner_Soixima(false)
+    set_Banner_Istoriko(true)
+  }
+  
   
   return (
     
@@ -240,8 +465,8 @@ function App() {
       {/*Header banner*/}
       <div className="bg-[#0066cc] w-1/2 h-16 fixed left-0 top-0 flex flex-row justify-start ">
         <div className="font-semibold text-white w-1/12 h-1/12 pt-3 text-3xl italic  ml-6 " > Sixaman </div>
-        <div className="font-bold text-white w-1/12 h-1/12 pt-6 text-sm ml-20 ">ΣΟΙΧΑΜΑ</div>
-        
+        <Button onClick={handle_Banner_Soixima} className="font-bold bg-transparent hover:bg-transparent hover:ring-0 hover:outline-none hover:border-none focus:ring-0 focus:border-0 focus:outline-none text-white w-1/12 mt-6 h-4  text-sm ml-20 ">ΣΟΙΧΗΜΑ</Button>
+        <Button onClick={handle_Banner_Istoriko} className="font-bold bg-transparent hover:bg-transparent hover:ring-0 hover:outline-none hover:border-none focus:ring-0 focus:border-0 focus:outline-none text-white w-1/12 mt-6 h-4  text-sm ml-10 ">ΤΑ ΣΟΙΧΗΜΑΤΑ ΜΟΥ</Button>
         
       </div>
       
@@ -274,10 +499,9 @@ function App() {
        
         {/*Matches body */}
         
-        <div className="bg-white w-[75%] h-[90%] rounded-lg mx-auto mt-2">
-        
-          <div className=" w-full h-10 border-b pt-2">ΑΓΩΝΕΣ</div>
-          { matches && (
+        <div className="bg-white w-[80%] h-[90%] rounded-lg ml-4 mt-2">
+          
+          { matches && banner_Soixima && (
             matches.map(match => (
               
           <div className=" w-full h-13 flex p-4 border-b ">
@@ -307,9 +531,9 @@ function App() {
               
               <div className=" h-7 flex justify-around  border-r">
                 
-                <Button onClick={handle_Odd_Button} id={match.id} name="asos" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.asos_Odd}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="x" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.x_Odd}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="diplo" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.diplo_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="asos" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.asos_Odd).toFixed(2)}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="x" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.x_Odd).toFixed(2)}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="diplo" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.diplo_Odd).toFixed(2)}</Button>
               </div>
               
               
@@ -324,8 +548,8 @@ function App() {
               
               
               <div className=" h-7 flex  justify-around">
-                <Button onClick={handle_Odd_Button} id={match.id} name="over25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.over25_Odd}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="under25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.under25_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="over25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.over25_Odd).toFixed(2)}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="under25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.under25_Odd).toFixed(2)}</Button>
                 
               </div>
               
@@ -341,8 +565,8 @@ function App() {
               
               
               <div className=" h-7 flex  justify-around">
-                <Button onClick={handle_Odd_Button} id={match.id} name="gg" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.gg_Odd}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="ng" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{match.ng_Odd}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="gg" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.gg_Odd).toFixed(2)}</Button>
+                <Button onClick={handle_Odd_Button} id={match.id} name="ng" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.ng_Odd).toFixed(2)}</Button>
                 
               </div>
               
@@ -351,23 +575,100 @@ function App() {
       
           
           </div>
+          
           )))}
-      
+        {/*History Body}*/}
+        {banner_Istoriko && (
+          <div className=" w-full  h-full rounded-lg flex flex-row flex-wrap overflow-y-auto max-h-[75vh] justify-start ">
+              
+              {bet_List_Istoriko.map(bet => (
+                <div className="bg-gray-50 w-[19%] h-fit  mr-2 rounded-t-3xl   border-gray-200 border    ">
+                  <div className=" text-sm">Ημερομηνία Δελτίου: {dayjs(bet.items[0].created_At).format("DD/MM/YYYY HH:mm")}</div>
+                
+                {
+                  bet.items.map(game => (
+                    <div className="bg-white rounded-lg mb-2 border text-left mx-2 mt-2 ">
+                      <div className=" font-semibold w-full flex">
+                      <div className=" w-1/2 text-left pl-2">{game.title}</div>
+                      <div className="w-1/2 text-right mr-2">{game.value_Odd}</div>
+                    </div>
+                    <div className="w-full text-left pl-2 text-sm text-gray-600 ">{game.descr}</div>
+                    <div className="w-full text-left pl-2 text-sm">{game.home_Team}-{game.away_Team}</div>
+
+                    
+                      
+                      
+                    </div>
+                  ))
+                }
+                <div className="bg-white w-full rounded-t-3xl border-t">
+                  <div className=" w-[90%] mx-auto border-b mt-2">
+                    <div className="flex">
+                    <div className="text-left text-sm text-gray-600 w-1/2  font-semibold">Στοιχήματα </div>
+                    <div className="text-right text-sm text-gray-600 w-1/2 font-semibold">{(bet.items).length}</div>
+                    </div>
+                  </div>
+                  <div className=" w-[90%] mx-auto  mt-2">
+                    <div className="flex">
+                      <div className="text-left text-sm text-gray-600 w-1/2  font-semibold">Πιθανά κέρδη </div>
+                      <div className="text-right text-sm font-bold w-1/2 ">{((bet.items[0].bet_Odd)*(bet.items[0].bet_Amount)).toFixed(2)}</div>
+                    </div>
+                  </div>
+                  <div className=" w-[90%] mx-auto  mt-2">
+                    <div className="flex">
+                      <div className="text-left text-sm text-gray-600 w-1/2  font-semibold">Ποσό στοιχήματος </div>
+                      <div className="text-right text-sm font-bold w-1/2 ">{(bet.items[0].bet_Amount).toFixed(2)}</div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              ))}
+              
+              
+              
+            </div>
+          
+        )}
+        
+
+
+
+
+
+        
         </div>
         
+        
        
-       
-       
-        <div className="bg-white w-[20%] h-[90%] mr-auto rounded-lg mt-2">
+        {/*Bet Body*/}
+        <div className="bg-gray-50 w-[19%] h-fit  mr-auto rounded-t-3xl fixed bottom-0 right-0 border-gray-200 border  pb-3 ">
         {bet_List.map((choice, index) => (
-          <div key={index}>
-            Odd: {choice.odd}, Name: {choice.name}, ID : {choice.id}
+          
+          <div key={index} className="rounded-lg bg-white border-gray-200 border w-[95%] mx-auto h-20 pt-2  mt-2">
+           {/* <div className="text-left  w-[95%] mx-auto font-semibold  h-1/2 pt-3 flex">{choice.title}<div className=' w-2/3 mx-auto text-right'>{(choice.odd).toFixed(2)}</div></div>*/}
+            <div className="flex">
+              <div className="w-1/2 text-left mx-auto pl-2 font-semibold">{choice.title}</div>
+              <div className="w-1/2 text-right pr-4 font-semibold">{(choice.odd).toFixed(2)}</div>
+            </div>
+            <div className="text-left w-[95%] mx-auto  text-sm text-gray-600">{choice.perigrafi}</div>
+            <div className="text-left w-[95%] mx-auto  text-sm">{choice.home_Team}-{choice.away_Team}</div>
+            
+            
+            
           </div>
         ))}
-        
-     
+        <div className="flex justify-end w-[95%]  mx-auto mt-2">
+          <div className="w-[15%] h-fit my-1">{bet_Odd}</div>
+          
+          <Input name="input_Bet" type="number" onChange={handleChange} className="w-[20%] h-full rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus-visible:ring-0 focus:outline-none  focus:ring-0"></Input>
         </div>
+        <div className="rounded-t-lg bg-white border-t mt-2  border-gray-200  w-[100%] mx-auto h-fit  text-sm text-left text-gray-600">
+        <div className="text-left pl-2  w-[95%] mx-auto font-semibold  h-1/2 pt-2 border-b flex">Στοιχήματα <div className="text-right w-full pr-6">{bet_List.length}</div></div>
+        <div className="text-left pl-2  w-[95%] mx-auto font-semibold  h-1/2 pt-2   flex">Πιθανά κέρδη <div className="text-right w-[70%] pr-3   h-1/2  font-bold text-black">{((formData.input_Bet)*bet_Odd).toFixed(2)}</div></div>
         
+        </div>
+        <div className='bg-white'><Button onClick={handle_Bet} className=" w-[95%] mx-auto h-8 bg-[#e70161] text-xs rounded-lg mt-2 hover:bg-[#e70161] border-none ring-0 outline-none focus:outline-none">ΣΟΙΧΗΜΑΤΙΣΕ</Button></div>
+        </div>
       </div>
     </div>
   )
