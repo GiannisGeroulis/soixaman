@@ -10,6 +10,8 @@ import { setDate, setSeconds } from 'date-fns'
 import { TriangleAlert } from "lucide-react"
 import { Dropdown_balance } from './Dropdown_balance'
 import dayjs from 'dayjs';
+import { AlertCircle } from "lucide-react"
+import {Alert,AlertDescription,AlertTitle} from "@/components/ui/alert"
 
 
 const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppanBmdWJ1Y3RzbmRqaWZvaWptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQyOTY3NzAsImV4cCI6MjA0OTg3Mjc3MH0.-ULAU7RraewQKid5LDYXMtGoo5FK8J6_YLIE9PcsqGA')
@@ -39,9 +41,23 @@ function App() {
   const [date,set_Date]=useState(null)
   const [gender,set_Gender]=useState("")
   const [istoriko,set_Istoriko]=useState([])
+  const [isSlidingOut, setIsSlidingOut] = useState(false);
   const [formData,setFormData] = useState({
     email:"",name:"",surname:"",password:"",input_Bet:1
    })
+   useEffect(() => {
+    if (error) {
+      const timeout = setTimeout(() => {
+        setIsSlidingOut(true); // Ενεργοποιεί το slide-out animation
+        setTimeout(() => {
+          set_Error(null); // Κρύβει το Alert εντελώς
+          setIsSlidingOut(false); // Επαναφέρει την κατάσταση slide-out
+        }, 500); // Διάρκεια του slide-out (500ms)
+      }, 3000); // Χρονική διάρκεια παραμονής (3 δευτερόλεπτα)
+
+      return () => clearTimeout(timeout); // Καθαρισμός timeout αν αλλάξει το component
+    }
+  }, [error, set_Error]);
    {/*console.log(formData)
    console.log("date : ",date)
    console.log("gender : ",gender)
@@ -226,6 +242,19 @@ function App() {
     // 1δ) Ενημερώνουμε ΤΟ state (χωρίς push/splice)
     set_Bet_List_Istoriko(newBetListIstoriko);
   }
+  async function update_Balance (new_Balance)
+  {
+   
+   console.log(new_Balance)
+   const {data , error } = await supabase
+   .from('users')
+   .update({ balance: new_Balance })
+   .eq('id', user.id )
+   .select()
+   console.log(data)
+   
+   
+  }
    const handle_Enter = (e) =>
    {
     if(e.key === "Enter")
@@ -297,6 +326,11 @@ function App() {
       return acc;
     }, {});
   
+    if(balance -parseFloat(formData.input_Bet).toFixed(2) < 0)
+    {
+      set_Error("Δεν επαρκει το υπόλοιπο")
+      return
+    }
     const { data, error } = await supabase
       .from('bets')
       .insert([
@@ -307,13 +341,22 @@ function App() {
           ...choicesObj
         }
       ]);
-  
+      
     if (!error) {
+      
+      
+        
+        
+      
+      
+      update_Balance(balance -parseFloat(formData.input_Bet).toFixed(2))
+      set_Balance(balance -parseFloat(formData.input_Bet).toFixed(2))
       // Αφού το insert πέτυχε, ανανέωσε το ιστορικό
       fetch_Istoriko(user);
       // Αν θέλεις, μπορείς και να “καθαρίσεις” τα τρέχοντα στοιχήματα
       set_Bet_List([]);
-      set_Bet_Odd(1);
+      set_Bet_Odd(1)
+      
     } else {
       console.error("handle_Bet insert error:", error);
     }
@@ -668,7 +711,22 @@ function App() {
         
         </div>
         <div className='bg-white'><Button onClick={handle_Bet} className=" w-[95%] mx-auto h-8 bg-[#e70161] text-xs rounded-lg mt-2 hover:bg-[#e70161] border-none ring-0 outline-none focus:outline-none">ΣΟΙΧΗΜΑΤΙΣΕ</Button></div>
+        
         </div>
+        {error && (
+        <Alert
+          variant="destructive"
+          className={`fixed bottom-4 bg-white w-fit left-4 transition-all duration-500 ${
+            isSlidingOut ? "animate-out slide-out-to-bottom" : "animate-in slide-in-from-bottom"
+          }`}
+        >
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+        
       </div>
     </div>
   )
