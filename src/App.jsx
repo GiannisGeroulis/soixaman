@@ -29,6 +29,7 @@ function App() {
   const [bet_Odd,set_Bet_Odd]=useState(1)
   const [bet_List,set_Bet_List]=useState([])
   const [matches,set_Matches]=useState(null)
+  const [matches_Display,set_Matches_Display]=useState(null)
   const [toggle_Register,set_Toggle_Register]=useState(false)
   const [toggle_Login,set_Toggle_Login]=useState(true)
   const [error,set_Error]=useState(null)
@@ -372,11 +373,27 @@ function App() {
     const { data, error } = await supabase
     .from('matches')
     .select()
+  
     set_Matches(data)
+
+    
     
    }
    useEffect(() => {
     fetch_Games();
+   }, [])
+   async function fetch_Games2() {
+    const { data, error } = await supabase
+    .from('matches')
+    .select()
+    .eq("match_End",false)
+    set_Matches_Display(data)
+
+    
+    
+   }
+   useEffect(() => {
+    fetch_Games2();
    }, [])
    
   function handle_Odd_Button (e) 
@@ -548,7 +565,7 @@ function App() {
       {/*Register Page */
       
       toggle_Register &&  
-      <div className="fixed top-0 left-0 w-full h-full  bg-black bg-opacity-60">
+      <div className="fixed top-0 left-0 w-full h-full z-[10000] bg-black bg-opacity-60">
       <div className="fixed w-[55%] h-[80%] z-[10000]  top-12 left-[22%] bg-slate-100  flex">
       <div className="w-1/2 h-full bg-[#0066cc]">sdaf</div>
       <div className="w-1/2">
@@ -653,9 +670,9 @@ function App() {
         {/*Matches body */}
         
         <div className="bg-white w-[79%]  h-fit  rounded-lg ml-4  mt-2">
-          
-          { matches && banner_Soixima && (
-            matches.map(match => (
+          {console.log(matches_Display)}
+          { matches_Display && banner_Soixima && (
+            matches_Display.map(match => (
               
           <div className=" w-full h-13 flex p-4 border-b ">
             <div className=" h-full w-[15%] flex-col " >
