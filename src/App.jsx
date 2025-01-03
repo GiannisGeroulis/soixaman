@@ -22,10 +22,16 @@ const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhb
 
 
 
+
 function App() {
+  const [katatakseis,set_Katatakseis]=useState([])
+  const [kerdismeno,set_Kerdismeno]=useState(true)
+  const [anoixto,set_Anoixto]=useState(true)
+  const [xameno,set_Xameno]=useState(true)
   const [bet_List_Istoriko,set_Bet_List_Istoriko]=useState([])
   const [banner_Istoriko,set_Banner_Istoriko]=useState(false)
   const [banner_Soixima,set_Banner_Soixima]=useState(true)
+  const  [banner_Katatakseis,set_Banner_Katatakseis]=useState(false)
   const [bet_Odd,set_Bet_Odd]=useState(1)
   const [bet_List,set_Bet_List]=useState([])
   const [matches,set_Matches]=useState(null)
@@ -75,7 +81,12 @@ function App() {
        
      })
    }
-   
+   function filter_Kerdismena()
+   {set_Kerdismeno(!kerdismeno)}
+   function filter_Xamena()
+   {set_Xameno(!xameno)}
+   function filter_Anoixta()
+   {set_Anoixto(!anoixto)}
     
    async function register_User ()
    {
@@ -106,16 +117,17 @@ function App() {
       set_Toggle_Login(true)
     }
     
-    insert_User_Table(data.user.id)
+    insert_User_Table(data.user.id,data.user.user_metadata.name)
    }
-   async function insert_User_Table(r_id)
+   async function insert_User_Table(r_id,display)
    {
      const { error } = await supabase
      .from('users')
-     .insert({ id: r_id } )
+     .insert({ id: r_id , display:display } )
      
 
    }
+  
    async function fetch_Balance(user) {
     if (!user || !user.id) {
       console.error("Ο χρήστης δεν είναι έγκυρος:", user);
@@ -154,6 +166,7 @@ function App() {
     set_Greeting(true)
     fetch_Balance(data.user)
     fetch_Istoriko(data.user)
+    fetch_Katatakseis()
     }
     else if(error)
     {
@@ -323,7 +336,14 @@ function App() {
       
     }
     //console.log(newBetListIstoriko)
+    let wins=0
     console.log(newBetListIstoriko)
+    newBetListIstoriko.map(bet => {
+      if(bet.bet_Status===true) {wins++}
+
+
+    })
+    update_Pososta(wins,newBetListIstoriko.length)
     // 1δ) Ενημερώνουμε ΤΟ state (χωρίς push/splice)
     set_Bet_List_Istoriko(newBetListIstoriko);
     
@@ -361,6 +381,15 @@ function App() {
    
    
    
+  }
+  async function update_Pososta(wins,matches)
+  {
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const {error} = await supabase
+    .from('users')
+    .update({bet_Wins:wins , bet_Length:matches , pososto: ((wins/matches)*100).toFixed(2)})
+    .eq('id',user.id)
   }
    const handle_Enter = (e) =>
    {
@@ -473,7 +502,7 @@ function App() {
         
         
       
-      
+      set_Error("Το στοίχημα τοποθετήθηκε επιτυχώς")
       update_Balance(balance -parseFloat(formData.input_Bet).toFixed(2))
       set_Balance(balance -parseFloat(formData.input_Bet).toFixed(2))
       // Αφού το insert πέτυχε, ανανέωσε το ιστορικό
@@ -486,76 +515,33 @@ function App() {
       console.error("handle_Bet insert error:", error);
     }
   }
-  function fetch_Istoriko_Bet(bet_Id)
+  async function fetch_Katatakseis()
   {
-  const bet_Items = [];
-    
-  // 1) Αν τα choice_1..choice_8 είναι μέσα σε bet_Id σαν object properties,
-  //    τότε μπορούμε να τα διατρέξουμε με έναν κλασικό for:
-
-  for (let i = 1; i <= 8; i++) {
-    let game =null
-    let perigrafi =null
-    let title=null
-    const choiceKey = `choice_${i}`;
-    if(bet_Id[choiceKey] !== null)
-    {
-      const [name,match_Id,value_Odd] = bet_Id[choiceKey].split(" ");
-      matches.map(match =>
-        {
-          if(match.id === parseFloat(match_Id)){game=match}
-        }
-        )
-      if(name === "asos"){title=game.h_Team;perigrafi="Αποτέλεσμα κανονική διάρκεια"}else if (name === "x"){title="Ισοπαλία";perigrafi="Αποτέλεσμα κανονική διάρκεια"}else if (name === "diplo") {title=game.a_Team;perigrafi="Αποτέλεσμα κανονική διάρκεια"}
-      else if(name==="over25"){title="Over 2.5";perigrafi="Goal Over/Under"}else if(name==="under25"){title="Under 2.5";perigrafi="Goal Over/Under"}else if(name==="gg"){title="Ναι(GG)";perigrafi="Να σκοράρουν και οι δυο ομάδες"}else if(name==="ng"){title="Οχι(NG)";perigrafi="Να σκοράρουν και οι δυο ομάδες"}
-        
-      const full_Info =
-      {
-        home_Team: game.h_Team,
-        away_Team: game.a_Team,
-        bet_Odd: bet_Id.bet_Odd,
-        value: name,
-        value_Odd: value_Odd ,
-        descr: perigrafi,
-        title: title,
-        bet_Id: bet_Id.id,
-        bet_Amount: bet_Id.bet_Amount,
-        created_At: bet_Id.created_at,
-        
-        
-      }
-      
-      bet_Items.push(full_Info)
-    
-    }
-    
-   
+    const {data,error} = await supabase
+    .from('users')
+    .select()
+    set_Katatakseis(data)
   }
-  let index = bet_List_Istoriko.findIndex(item => item.betId === bet_Id.id);
-
-  if (index !== -1) {
-    // 2α) Αν υπάρχει, προσθέτουμε τα νέα full_Info
-    bet_List_Istoriko[index].items.push(...betItems);
-  } else {
-    // 2β) Αν δεν υπάρχει, το σπρώχνουμε στο ΤΕΛΟΣ του πίνακα
-    bet_List_Istoriko.push({
-      betId: bet_Id.id,
-      items: bet_Items
-    });
-  }
-
+  function handle_Banner_Katatakseis()
+  {
+    set_Banner_Katatakseis(true)
+    set_Banner_Istoriko(false)
+    set_Banner_Soixima(false)
   }
   function handle_Banner_Soixima()
   {
+    set_Banner_Katatakseis(false)
     set_Banner_Soixima(true)
     set_Banner_Istoriko(false)
   }
   function handle_Banner_Istoriko()
   {
-    
+    set_Banner_Katatakseis(false)
     set_Banner_Soixima(false)
     set_Banner_Istoriko(true)
-    
+    set_Anoixto(true)
+    set_Xameno(true)
+    set_Kerdismeno(true)
   }
   
   
@@ -637,7 +623,7 @@ function App() {
         <Button onClick={handle_Banner_Soixima} className="font-semibold text-white w-fit bg-transparent hover:bg-transparent hover:ring-0 hover:outline-none hover:border-none focus:ring-0 focus:border-0 focus:outline-none h-fit mt-1 text-3xl italic  ml-6 " > Sixaman </Button>
         <Button onClick={handle_Banner_Soixima} className="font-bold bg-transparent hover:bg-transparent hover:ring-0 hover:outline-none hover:border-none focus:ring-0 focus:border-0 focus:outline-none text-white w-fit mt-6 h-4  text-sm  ">ΣΟΙΧΗΜΑ</Button>
         <Button onClick={handle_Banner_Istoriko} className="font-bold bg-transparent hover:bg-transparent hover:ring-0 hover:outline-none hover:border-none focus:ring-0 focus:border-0 focus:outline-none text-white w-fit mt-6 h-4  text-sm  ">ΤΑ ΣΟΙΧΗΜΑΤΑ ΜΟΥ</Button>
-        
+        <Button onClick={handle_Banner_Katatakseis} className="font-bold bg-transparent hover:bg-transparent hover:ring-0 hover:outline-none hover:border-none focus:ring-0 focus:border-0 focus:outline-none text-white w-fit mt-6 h-4  text-sm  ">ΚΑΤΑΤΑΞΕΙΣ</Button>
       </div>
       
       <div className="bg-[#0066cc] w-1/2 h-16 fixed left-1/2 top-0 flex flex-row justify-end ">
@@ -665,14 +651,22 @@ function App() {
       {/*Body*/}
       
       <div className="bg-gray-200 fixed h-full w-full left-0 top-16 flex overflow-y-auto">
-      
+        
        
         {/*Matches body */}
         
         <div className="bg-white w-[79%]  h-fit  rounded-lg ml-4  mt-2">
           {console.log(matches_Display)}
           { matches_Display && banner_Soixima && (
-            matches_Display.map(match => (
+            matches_Display
+            .sort((a, b) => {
+              // Συνδυασμός ημερομηνίας και ώρας σε αντικείμενα Date
+              const currentYear = new Date().getFullYear();
+              const dateA = new Date(`${currentYear}-${a.date.split('/').reverse().join('-')}T${a.time}`);
+              const dateB = new Date(`${currentYear}-${b.date.split('/').reverse().join('-')}T${b.time}`);
+              return dateA - dateB; // Σειρά από παλιότερα σε πιο πρόσφατα
+            })
+            .map(match => (
               
           <div className=" w-full h-13 flex p-4 border-b ">
             <div className=" h-full w-[15%] flex-col " >
@@ -747,65 +741,121 @@ function App() {
           </div>
           
           )))}
-        {/*History Body}*/}
-        {banner_Istoriko && (
-          <div className=" w-full h-full rounded-lg flex flex-row flex-wrap overflow-y-auto  justify-start ">
-              
-              {bet_List_Istoriko.map(bet => (
-                <div className="bg-gray-50 mb-20  w-[19%] h-fit  mr-2 rounded-t-3xl   border-gray-200 border    ">
-                  <div className=" text-sm">Ημερομηνία Δελτίου: {dayjs(bet.created_At).format("DD/MM/YYYY HH:mm")}</div>
-                  {console.log(bet)}
-                  
-                {
-                  bet.items.map(game => (
-                    
-                        <div
-                        className= "rounded-lg mb-2 border text-left mx-2 mt-2 ">
-                      
-                        <div className={`font-semibold w-full flex ${!game.match_Bool ? "text-yellow-400" : game.odd_Bool && game.match_Bool ? "text-green-600" : "text-red-600"}`}>
-                          <div className="w-1/2 text-left pl-2 " >{game.title}</div>
-                          <div className="w-1/2 text-right mr-2">{game.value_Odd}</div>
-                        </div>
-                        <div className="w-full text-left pl-2 text-sm text-gray-600">{game.descr}</div>
-                        <div className="w-full text-left pl-2 text-sm">
-                          {game.home_Team}-{game.away_Team}
-                        </div>
-                      </div>
-                  ))
-                }
-                <div className="bg-white w-full rounded-t-3xl border-t">
-                  <div className=" w-[90%] mx-auto border-b mt-2">
-                    <div className="flex">
-                    <div className="text-left text-sm text-gray-600 w-1/2  font-semibold">Στοιχήματα </div>
-                    <div className="text-right text-sm text-gray-600 w-1/2 font-semibold">{(bet.items).length}</div>
-                    </div>
-                  </div>
-                  <div className=" w-[90%] mx-auto  mt-2">
-                    <div className="flex">
-                      <div className="text-left text-sm text-gray-600 w-1/2  font-semibold">Πιθανά κέρδη </div>
-                      <div className="text-right text-sm font-bold w-1/2 ">{((bet.bet_Odd)*(bet.bet_Amount)).toFixed(2)}</div>
-                    </div>
-                  </div>
-                  <div className=" w-[90%] mx-auto  mt-2">
-                    <div className="flex">
-                      <div className="text-left text-sm text-gray-600 w-1/2  font-semibold">Ποσό στοιχήματος </div>
-                      <div className="text-right text-sm font-bold w-1/2 ">{(bet.bet_Amount).toFixed(2)}</div>
-                    </div>
-                  </div>
-                  <div className={`rounded-b-3xl border-t font-semibold text-sm ${bet.status_Text === "ΑΝΟΙΧΤΟ" ? "bg-yellow-400": bet.status_Text === "ΚΕΡΔΙΣΜΕΝΟ"? "bg-green-600": "bg-red-600"}`}>{bet.status_Text}</div>
-                
-                  
-                </div>
-                </div>
-              ))}
-              
-              
-              
-            </div>
-          
-        )}
-        
+       {/*History Body*/}
+{banner_Istoriko && (
+  <div className="w-full h-full rounded-lg flex flex-row flex-wrap overflow-y-auto justify-start">
+    {bet_List_Istoriko
+      .filter(bet => {
+        // Δημιουργία συνόλου των επιθυμητών status
+        const validStatuses = [];
+        if (kerdismeno) validStatuses.push("ΚΕΡΔΙΣΜΕΝΟ");
+        if (xameno) validStatuses.push("ΧΑΜΕΝΟ");
+        if (anoixto) validStatuses.push("ΑΝΟΙΧΤΟ");
 
+        // Επιστροφή μόνο όσων bet έχουν status που περιλαμβάνεται στο validStatuses
+        return validStatuses.includes(bet.status_Text);
+      })
+      .sort((a, b) =>
+        {if (a.status_Text < b.status_Text) return -1;
+          if (a.status_Text > b.status_Text) return 1;
+  
+          // Αν τα status_Text είναι ίδια, ταξινομούμε με βάση το created_At
+          return new Date(b.created_At) - new Date(a.created_At);} )
+      .map(bet => (
+        <div className="bg-gray-50 mb-20 mt-2 mr-2 w-[19%] h-fit  rounded-3xl border-gray-200 border">
+          <div className="text-sm">
+            Ημερομηνία Δελτίου: {dayjs(bet.created_At).format("DD/MM/YYYY HH:mm")}
+          </div>
+
+          {bet.items.map(game => (
+            <div className="rounded-lg mb-2 border text-left mx-2 mt-2">
+              <div
+                className={`font-semibold w-full flex ${
+                  !game.match_Bool
+                    ? "text-yellow-400"
+                    : game.odd_Bool && game.match_Bool
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                <div className="w-1/2 text-left pl-2">{game.title}</div>
+                <div className="w-1/2 text-right mr-2">{game.value_Odd}</div>
+              </div>
+              <div className="w-full text-left pl-2 text-sm text-gray-600">{game.descr}</div>
+              <div className="w-full text-left pl-2 text-sm">
+                {game.home_Team}-{game.away_Team}
+              </div>
+            </div>
+          ))}
+          <div className="bg-white w-full rounded-t-3xl border-t">
+            <div className="w-[90%] mx-auto border-b mt-2">
+              <div className="flex">
+                <div className="text-left text-sm text-gray-600 w-1/2 font-semibold">
+                  Στοιχήματα
+                </div>
+                <div className="text-right text-sm text-gray-600 w-1/2 font-semibold">
+                  {bet.items.length}
+                </div>
+              </div>
+            </div>
+            <div className="w-[90%] mx-auto mt-2">
+              <div className="flex">
+                <div className="text-left text-sm text-gray-600 w-1/2 font-semibold">
+                  Πιθανά κέρδη
+                </div>
+                <div className="text-right text-sm font-bold w-1/2">
+                  {((bet.bet_Odd) * (bet.bet_Amount)).toFixed(2)}
+                </div>
+              </div>
+            </div>
+            <div className="w-[90%] mx-auto mt-2">
+              <div className="flex">
+                <div className="text-left text-sm text-gray-600 w-1/2 font-semibold">
+                  Ποσό στοιχήματος
+                </div>
+                <div className="text-right text-sm font-bold w-1/2">
+                  {(bet.bet_Amount).toFixed(2)}
+                </div>
+              </div>
+            </div>
+            <div
+              className={`rounded-b-3xl border-t font-semibold text-sm ${
+                bet.status_Text === "ΑΝΟΙΧΤΟ"
+                  ? "bg-yellow-400"
+                  : bet.status_Text === "ΚΕΡΔΙΣΜΕΝΟ"
+                  ? "bg-green-600"
+                  : "bg-red-600"
+              }`}
+            >
+              {bet.status_Text}
+            </div>
+          </div>
+        </div>
+      ))}
+  </div>
+)}
+
+      
+      {banner_Katatakseis && (
+        <div >
+        <div className="flex w-full h-full space-x-4 justify-center  border-b border-gray-300">
+          <div className="border-r-2 border-l-2 w-[13%] border-gray-200 pr-2 my-2">Όνομα Χρήστη</div>
+          <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Νίκες/Ήττες</div>
+          <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Ποσοστό Επιτυχίας</div>
+        </div>
+        
+          {katatakseis
+          .sort((a, b) => b.pososto - a.pososto)
+          .map(katataksi => (
+            <div className="flex  w-full h-full space-x-4 justify-center  border-b border-gray-300">
+              <div className="border-r-2 border-l-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.display}</div>
+              <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.bet_Wins}/{katataksi.bet_Length}</div>
+              <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.pososto}%</div>
+            </div>
+          ))}
+        </div>
+        
+      )}
 
 
 
@@ -845,6 +895,7 @@ function App() {
         <div className='bg-white'><Button onClick={handle_Bet} className=" w-[95%] mx-auto h-8 bg-[#e70161] text-xs rounded-lg mt-2 hover:bg-[#e70161] border-none ring-0 outline-none focus:outline-none">ΣΟΙΧΗΜΑΤΙΣΕ</Button></div>
         
         </div>
+        
         {error && (
         <Alert
           variant="destructive"
@@ -854,12 +905,21 @@ function App() {
         >
           
           <AlertCircle className="h-4 w-4 " />
-          <AlertTitle>Error</AlertTitle>
+          
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      
+      {banner_Istoriko && (<div className=" w-[18%]  mx-auto mt-2 flex space-y-2  flex-col flex-wrap">
+      <Button onClick={filter_Kerdismena} className={`w-24 ring-0 outline-none focus:outline-none h-8 ${kerdismeno ? 'bg-white border-blue-400 text-green-700 hover:bg-white' : 'bg-gray-300 hover:bg-transparent text-green-700 border-black'}`}>ΚΕΡΔΙΣΜΕΝΑ</Button>
 
+        <Button onClick={filter_Anoixta} className={`w-24 ring-0 outline-none focus:outline-none h-8 ${anoixto ? 'bg-white border-blue-400 text-yellow-400 hover:bg-white' : 'bg-gray-300 hover:bg-transparent text-yellow-400 border-black'}`}>ΑΝΟΙΧΤΑ</Button>
+        <Button onClick={filter_Xamena} className={`w-24 ring-0 outline-none focus:outline-none h-8 ${xameno ? 'bg-white border-blue-400 text-red-700 hover:bg-white' : 'bg-gray-300 hover:bg-transparent text-red-700 border-black'}`}>ΧΑΜΕΝΑ</Button>
         
+      </div>)}
+
+     
+      
       </div>
     </div>
   )

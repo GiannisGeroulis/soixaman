@@ -1,0 +1,94 @@
+{
+  "hash": "88627b12",
+  "configHash": "422a9d3b",
+  "lockfileHash": "2e8a0d99",
+  "browserHash": "76057d03",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "65c860e3",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "bc44463e",
+      "needsInterop": true
+    },
+    "@supabase/supabase-js": {
+      "src": "../../node_modules/@supabase/supabase-js/dist/module/index.js",
+      "file": "@supabase_supabase-js.js",
+      "fileHash": "333d7769",
+      "needsInterop": false
+    },
+    "date-fns": {
+      "src": "../../node_modules/date-fns/index.mjs",
+      "file": "date-fns.js",
+      "fileHash": "2cf01b75",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "6d3797fe",
+      "needsInterop": false
+    },
+    "dayjs": {
+      "src": "../../node_modules/dayjs/dayjs.min.js",
+      "file": "dayjs.js",
+      "fileHash": "dee2cd17",
+      "needsInterop": true
+    },
+    "@radix-ui/react-label": {
+      "src": "../../node_modules/@radix-ui/react-label/dist/index.mjs",
+      "file": "@radix-ui_react-label.js",
+      "fileHash": "2174ab59",
+      "needsInterop": false
+    },
+    "class-variance-authority": {
+      "src": "../../node_modules/class-variance-authority/dist/index.mjs",
+      "file": "class-variance-authority.js",
+      "fileHash": "de74dda1",
+      "needsInterop": false
+    },
+    "@radix-ui/react-slot": {
+      "src": "../../node_modules/@radix-ui/react-slot/dist/index.mjs",
+      "file": "@radix-ui_react-slot.js",
+      "fileHash": "12dc7e6a",
+      "needsInterop": false
+    },
+    "@radix-ui/react-dropdown-menu": {
+      "src": "../../node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs",
+      "file": "@radix-ui_react-dropdown-menu.js",
+      "fileHash": "fbb03bda",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "browser-J6IYAAS7": {
+      "file": "browser-J6IYAAS7.js"
+    },
+    "browser-2YNC6QW7": {
+      "file": "browser-2YNC6QW7.js"
+    },
+    "chunk-SXH5L4NL": {
+      "file": "chunk-SXH5L4NL.js"
+    },
+    "chunk-NK2TMMMT": {
+      "file": "chunk-NK2TMMMT.js"
+    },
+    "chunk-JUWM2LYA": {
+      "file": "chunk-JUWM2LYA.js"
+    },
+    "chunk-W4EHDCLL": {
+      "file": "chunk-W4EHDCLL.js"
+    },
+    "chunk-7W32CK3N": {
+      "file": "chunk-7W32CK3N.js"
+    },
+    "chunk-EWTE5DHJ": {
+      "file": "chunk-EWTE5DHJ.js"
+    }
+  }
+}
