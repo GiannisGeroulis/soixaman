@@ -382,15 +382,28 @@ function App() {
    
    
   }
-  async function update_Pososta(wins,matches)
-  {
-    const { data: { user } } = await supabase.auth.getUser()
-
-    const {error} = await supabase
-    .from('users')
-    .update({bet_Wins:wins , bet_Length:matches , pososto: ((wins/matches)*100).toFixed(2)})
-    .eq('id',user.id)
+  async function update_Pososta(wins, matches) {
+    const { data: { user } } = await supabase.auth.getUser();
+  
+    const pososto = matches  > 0  ? ((wins / matches) * 100).toFixed(2) : 0.00;
+    console.log(pososto)
+    const { error } = await supabase
+      .from('users')
+      .update({
+        bet_Wins: wins,
+        bet_Length: matches,
+        pososto: pososto
+      })
+      .eq('id', user.id);
+  
+    if (error) {
+      console.error('Error updating pososto:', error);
+    } else {
+      console.log('Pososto updated successfully');
+      
+    }
   }
+  
    const handle_Enter = (e) =>
    {
     if(e.key === "Enter")
@@ -520,6 +533,7 @@ function App() {
     const {data,error} = await supabase
     .from('users')
     .select()
+    .gt('bet_Length',0)
     set_Katatakseis(data)
   }
   function handle_Banner_Katatakseis()
@@ -839,16 +853,18 @@ function App() {
       {banner_Katatakseis && (
         <div >
         <div className="flex w-full h-full space-x-4 justify-center  border-b border-gray-300">
-          <div className="border-r-2 border-l-2 w-[13%] border-gray-200 pr-2 my-2">Όνομα Χρήστη</div>
+          <div className="border-r-2 border-l-2 w-[8%] border-gray-200 pr-2 my-2">Θέση</div>
+          <div className="border-r-2  w-[13%] border-gray-200 pr-2 my-2">Όνομα Χρήστη</div>
           <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Νίκες/Ήττες</div>
           <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Ποσοστό Επιτυχίας</div>
         </div>
         
           {katatakseis
           .sort((a, b) => b.pososto - a.pososto)
-          .map(katataksi => (
-            <div className="flex  w-full h-full space-x-4 justify-center  border-b border-gray-300">
-              <div className="border-r-2 border-l-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.display}</div>
+          .map((katataksi,index) => (
+            <div key={index} className="flex  w-full h-full space-x-4 justify-center  border-b border-gray-300">
+              <div className="border-r-2 border-l-2 w-[8%] border-gray-200 pr-2 my-2">{index + 1}</div>
+              <div className="border-r-2  w-[13%] border-gray-200 pr-2 my-2">{katataksi.display}</div>
               <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.bet_Wins}/{katataksi.bet_Length}</div>
               <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.pososto}%</div>
             </div>
