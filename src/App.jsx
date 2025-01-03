@@ -855,7 +855,7 @@ function App() {
         <div className="flex w-full h-full space-x-4 justify-center  border-b border-gray-300">
           <div className="border-r-2 border-l-2 w-[8%] border-gray-200 pr-2 my-2">Θέση</div>
           <div className="border-r-2  w-[13%] border-gray-200 pr-2 my-2">Όνομα Χρήστη</div>
-          <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Νίκες/Ήττες</div>
+          <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Νίκες/Στοιχήματα</div>
           <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Ποσοστό Επιτυχίας</div>
         </div>
         
