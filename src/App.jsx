@@ -65,13 +65,7 @@ function App() {
       return () => clearTimeout(timeout); // Καθαρισμός timeout αν αλλάξει το component
     }
   }, [error, set_Error]);
-   {/*console.log(formData)
-   console.log("date : ",date)
-   console.log("gender : ",gender)
-   console.log("Login data : ",login_Data)
-   console.log("Error : " , error)
-   console.log("User : ",user)
-   console.log("Balance : ",balance)*/}
+   
    function handleChange(event)
    {
      setFormData((prevFormData)=>{
@@ -110,7 +104,7 @@ function App() {
       }
       
     )
-    console.log(data)
+    
     if(!error)
     {
       set_Toggle_Register(false)
@@ -335,9 +329,10 @@ function App() {
       update_Status(bet_Status,bet.id)}
       
     }
-    //console.log(newBetListIstoriko)
+  
     let wins=0
-    console.log(newBetListIstoriko)
+    
+
     newBetListIstoriko.map(bet => {
       if(bet.bet_Status===true) {wins++}
 
@@ -386,7 +381,7 @@ function App() {
     const { data: { user } } = await supabase.auth.getUser();
   
     const pososto = matches  > 0  ? ((wins / matches) * 100).toFixed(2) : 0.00;
-    console.log(pososto)
+    
     const { error } = await supabase
       .from('users')
       .update({
@@ -396,12 +391,7 @@ function App() {
       })
       .eq('id', user.id);
   
-    if (error) {
-      console.error('Error updating pososto:', error);
-    } else {
-      console.log('Pososto updated successfully');
-      
-    }
+    
   }
   
    const handle_Enter = (e) =>
@@ -488,6 +478,11 @@ function App() {
   }    
   async function handle_Bet() {
     if (bet_List.length === 0) return;
+    if (bet_List.length > 8)
+    {
+      set_Error("Μέχρι 8 στοιχήματα")
+      return
+    }
     const choicesObj = bet_List.reduce((acc, bet, index) => {
       acc[`choice_${index + 1}`] = bet.name + " " + bet.id + " " + bet.odd;
       return acc;
@@ -641,7 +636,7 @@ function App() {
       </div>
       
       <div className="bg-[#0066cc] w-1/2 h-16 fixed left-1/2 top-0 flex flex-row justify-end ">
-      {greeting && (<div className=" mt-4 font-semibold text-lg mr-12 flex">
+      {greeting && (<div className=" mt-4 font-semibold text-lg text-white mr-12 flex">
         <div className="mr-3">Γεια σου {user.user_metadata.name}</div> 
         <Dropdown_balance arrow="true" text={balance} id={user.id} set={set_Balance}></Dropdown_balance>
         
@@ -670,7 +665,7 @@ function App() {
         {/*Matches body */}
         
         <div className="bg-white w-[79%]  h-fit  rounded-lg ml-4  mt-2">
-          {console.log(matches_Display)}
+          
           { matches_Display && banner_Soixima && (
             matches_Display
             .sort((a, b) => {
@@ -882,27 +877,31 @@ function App() {
         
        
         {/*Bet Body*/}
-        <div className="bg-gray-50 w-[19%] h-fit  mr-auto rounded-t-3xl fixed bottom-0 right-0 border-gray-200 border  pb-3 ">
+        <div className="bg-gray-50 w-[19%]  mr-auto rounded-t-3xl  fixed bottom-0 right-0 border-gray-200 border  pb-3 ">
+          <div className=" max-h-96 rounded-3xl overflow-auto">
         {bet_List.map((choice, index) => (
           
-          <div key={index} className="rounded-lg bg-white border-gray-200 border w-[95%] mx-auto h-20 pt-2  mt-2">
+          <div key={index} className="rounded-lg bg-white border-gray-200 border w-[95%] mx-auto h-fit pb-2pt-2  mt-2">
            {/* <div className="text-left  w-[95%] mx-auto font-semibold  h-1/2 pt-3 flex">{choice.title}<div className=' w-2/3 mx-auto text-right'>{(choice.odd).toFixed(2)}</div></div>*/}
-            <div className="flex">
+            
+            <div className="flex ">
               <div className="w-1/2 text-left mx-auto pl-2 font-semibold">{choice.title}</div>
               <div className="w-1/2 text-right pr-4 font-semibold">{(choice.odd).toFixed(2)}</div>
             </div>
             <div className="text-left w-[95%] mx-auto  text-sm text-gray-600">{choice.perigrafi}</div>
             <div className="text-left w-[95%] mx-auto  text-sm">{choice.home_Team}-{choice.away_Team}</div>
+            </div>
             
             
-            
-          </div>
+          
         ))}
+        </div>
         <div className="flex justify-end w-[95%]  mx-auto mt-2">
           <div className="w-[15%] h-fit my-1">{bet_Odd}</div>
           
           <Input name="input_Bet" type="number" onChange={handleChange} className="w-[20%] h-full rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus-visible:ring-0 focus:outline-none  focus:ring-0"></Input>
         </div>
+        
         <div className="rounded-t-lg bg-white border-t mt-2  border-gray-200  w-[100%] mx-auto h-fit  text-sm text-left text-gray-600">
         <div className="text-left pl-2  w-[95%] mx-auto font-semibold  h-1/2 pt-2 border-b flex">Στοιχήματα <div className="text-right w-full pr-6">{bet_List.length}</div></div>
         <div className="text-left pl-2  w-[95%] mx-auto font-semibold  h-1/2 pt-2   flex">Πιθανά κέρδη <div className="text-right w-[70%] pr-3   h-1/2  font-bold text-black">{((formData.input_Bet)*bet_Odd).toFixed(2)}</div></div>
