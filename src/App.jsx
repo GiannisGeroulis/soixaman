@@ -84,7 +84,7 @@ function App() {
       fetchMatches();
       setFlag(false)
       updateFlag(false)
-    
+      fetch_Games2()
     }
   }, [flag]); // Τρέχει κάθε φορά που αλλάζει το matchesApi
   async function insert_Match(home_Team, away_Team, home_Image, away_Image, time) {
@@ -135,8 +135,14 @@ function App() {
       const homeImage = match.homeTeam.crest
       const awayImage = match.awayTeam.crest
       const time = match.utcDate
+      const home= match.score.fullTime.home
+      const away = match.score.fullTime.away
      // console.log(homeTeam,awayTeam,homeImage,awayImage,format(parseISO(time), 'dd/MM HH:mm'))
       insert_Match(homeTeam,awayTeam,homeImage,awayImage,format(parseISO(time), 'dd/MM HH:mm'))
+      if(home !== null && away !== null)
+      {
+        update_Score(home,away,homeTeam,awayTeam)
+      }
       
     })
     }else
@@ -144,6 +150,67 @@ function App() {
       console.log('No matches yet');
     }
   }, [matchesApi]); // Τρέχει κάθε φορά που αλλάζει το flag
+  async function update_Score(home,away,homeTeam,awayTeam)
+  {
+    const {error} = await supabase
+    .from('matches')
+    .update({ home: home, away: away, match_End: true })
+    .eq('h_Team', homeTeam)
+    .eq('a_Team', awayTeam)
+    
+    if(home>away)
+    {
+      const {error} = await supabase
+      .from('matches')
+      .update({ asos_Result: true })
+      .eq('h_Team', homeTeam)
+      .eq('a_Team', awayTeam)
+    }else if(home<away)
+    {
+      const {error} = await supabase
+      .from('matches')
+      .update({ diplo_Result: true })
+      .eq('h_Team', homeTeam)
+      .eq('a_Team', awayTeam)
+    }else if(home===away)
+    {
+      const {error} = await supabase
+      .from('matches')
+      .update({ x_Result: true })
+      .eq('h_Team', homeTeam)
+      .eq('a_Team', awayTeam)
+    }
+    if(home + away > 2.5)
+    {
+      const {error} = await supabase
+      .from('matches')
+      .update({ over25_Result: true })
+      .eq('h_Team', homeTeam)
+      .eq('a_Team', awayTeam)
+    }else if(home + away < 2.5)
+    {
+      const {error} = await supabase
+      .from('matches')
+      .update({ under25_Result: true })
+      .eq('h_Team', homeTeam)
+      .eq('a_Team', awayTeam)
+    }
+    if(home > 0 && away > 0)
+    {
+      const {error} = await supabase
+      .from('matches')
+      .update({ gg_Result: true })
+      .eq('h_Team', homeTeam)
+      .eq('a_Team', awayTeam)
+    }else if(home === 0 || away === 0)
+    {
+      const {error} = await supabase
+      .from('matches')
+      .update({ ng_Result: true })
+      .eq('h_Team', homeTeam)
+      .eq('a_Team', awayTeam)
+    }
+  }
   async function updateFlag(val)
   {
     const { error } = await supabase
@@ -154,16 +221,17 @@ function App() {
   }
   const fetchMatches = async () => {
     try {
-      const response = await fetch("/api/matches", {
+      const response = await fetch("https://cors-anywhere.herokuapp.com/https://api.football-data.org/v4/matches", {
         method: "GET",
         headers: {
-          "X-Auth-Token": "545e7fc4e4854d149dc252050ebce396",
+            "X-Auth-Token": "545e7fc4e4854d149dc252050ebce396",
         },
-      });
+    });
 
       if (response.ok) {
         const data = await response.json();
         setMatchesApi(data);
+        
       } else {
         console.error("HTTP error:", response.status);
       }
@@ -308,7 +376,7 @@ function App() {
       console.error("fetch_Istoriko error:", error);
       return;
     }
-  
+    
     // 1γ) “Χτίζουμε” ένα νέο array με το σχήμα που θες (betId, items[])
     const newBetListIstoriko = [];
     let balance_Add =0;
@@ -326,7 +394,7 @@ function App() {
           const [name, matchIdStr, valueOddStr] = bet[choiceKey].split(" ");
           const matchId = parseFloat(matchIdStr);
           const match = matches?.find(m => m.id === matchId);
-  
+          
           // Λογική για title, perigrafi
           const match_Bool= match.match_End
           
@@ -387,8 +455,9 @@ function App() {
             descr: perigrafi,
             title: title,
             odd_Bool: odd_Bool,
-            match_Bool: match_Bool
-            
+            match_Bool: match_Bool,
+            home: match.home,
+            away: match.away
             
             
           });
@@ -882,6 +951,7 @@ function App() {
           </div>
           
           )))}
+          {matches_Display.length===0 && banner_Soixima && (<div>Δεν υπάρχουν διαθέσιμα παιχνίδια</div>)}
           
        {/*History Body*/}
 {banner_Istoriko && (
@@ -903,14 +973,14 @@ function App() {
   
           // Αν τα status_Text είναι ίδια, ταξινομούμε με βάση το created_At
           return new Date(b.created_At) - new Date(a.created_At);} )
-      .map(bet => (
-        <div className="bg-gray-50 mb-20 mt-2 mr-2 w-[19%] h-fit  rounded-3xl border-gray-200 border">
+      .map((bet,index) => (
+        <div key={index} className="bg-gray-50 mb-20 mt-2 mr-2 w-[19%] h-fit  rounded-3xl border-gray-200 border">
           <div className="text-sm">
             Ημερομηνία Δελτίου: {dayjs(bet.created_At).format("DD/MM/YYYY HH:mm")}
           </div>
 
-          {bet.items.map(game => (
-            <div className="rounded-lg mb-2 border text-left mx-2 mt-2">
+          {bet.items.map((game,index) => (
+            <div key={index} className="rounded-lg mb-2 border text-left mx-2 mt-2">
               <div
                 className={`font-semibold w-full flex ${
                   !game.match_Bool
@@ -926,7 +996,9 @@ function App() {
               <div className="w-full text-left pl-2 text-sm text-gray-600">{game.descr}</div>
               <div className="w-full text-left pl-2 text-sm">
                 {game.home_Team}-{game.away_Team}
+                <div>{game.home}-{game.away}</div>
               </div>
+              
             </div>
           ))}
           <div className="bg-white w-full rounded-t-3xl border-t">
