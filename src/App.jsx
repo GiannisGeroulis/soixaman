@@ -12,7 +12,9 @@ import { Dropdown_balance } from './Dropdown_balance'
 import dayjs from 'dayjs';
 import { AlertCircle } from "lucide-react"
 import {Alert,AlertDescription,AlertTitle} from "@/components/ui/alert"
-
+import axios from "axios";
+import { use } from 'react'
+import { parseISO, format } from 'date-fns';
 
 const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppanBmdWJ1Y3RzbmRqaWZvaWptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQyOTY3NzAsImV4cCI6MjA0OTg3Mjc3MH0.-ULAU7RraewQKid5LDYXMtGoo5FK8J6_YLIE9PcsqGA')
 
@@ -24,6 +26,7 @@ const supabase = createClient('https://jijpfubuctsndjifoijm.supabase.co', 'eyJhb
 
 
 function App() {
+  const [matchesApi,setMatchesApi]=useState([])
   const [katatakseis,set_Katatakseis]=useState([])
   const [kerdismeno,set_Kerdismeno]=useState(true)
   const [anoixto,set_Anoixto]=useState(true)
@@ -35,7 +38,7 @@ function App() {
   const [bet_Odd,set_Bet_Odd]=useState(1)
   const [bet_List,set_Bet_List]=useState([])
   const [matches,set_Matches]=useState(null)
-  const [matches_Display,set_Matches_Display]=useState(null)
+  const [matches_Display,set_Matches_Display]=useState([])
   const [toggle_Register,set_Toggle_Register]=useState(false)
   const [toggle_Login,set_Toggle_Login]=useState(true)
   const [error,set_Error]=useState(null)
@@ -49,9 +52,127 @@ function App() {
   const [gender,set_Gender]=useState("")
   const [istoriko,set_Istoriko]=useState([])
   const [isSlidingOut, setIsSlidingOut] = useState(false);
+  const [flag,setFlag]=useState(null)
   const [formData,setFormData] = useState({
     email:"",name:"",surname:"",password:"",input_Bet:1
-   })
+   }) 
+
+
+  
+   const fetchFlagFromTable = async () => {
+    const { data, error } = await supabase
+      .from('fetch') // Πίνακας
+      .select('fetchFlag') // Επιλογή μόνο της στήλης fetchFlag
+      .single(); // Υποθέτουμε ότι υπάρχει μία μόνο γραμμή (ή χρησιμοποίησε data[0] για πολλαπλές)
+
+    if (error) {
+      console.error('Error fetching flag:', error);
+    } else {
+      setFlag(data.fetchFlag); // Ενημέρωση του state με την τιμή του fetchFlag
+    }
+  };
+
+  
+
+
+  // Παρακολούθηση matchesApi και flag
+  useEffect(() => {
+    console.log('Flag:', flag);
+    
+    if(flag === true)
+    {
+      fetchMatches();
+      setFlag(false)
+      updateFlag(false)
+    
+    }
+  }, [flag]); // Τρέχει κάθε φορά που αλλάζει το matchesApi
+  async function insert_Match(home_Team, away_Team, home_Image, away_Image, time) {
+    // Έλεγχος αν υπάρχει ήδη ο αγώνας
+    const { data: existingMatch, error: fetchError } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('h_Team', home_Team)
+      .eq('a_Team', away_Team)
+      .single();
+  
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 σημαίνει "Not Found" (δεν βρέθηκε εγγραφή)
+      console.error('Error checking existing match:', fetchError);
+      return;
+    }
+  
+    if (existingMatch) {
+      console.log('Match already exists:', existingMatch);
+      return; // Σταματάει η διαδικασία αν υπάρχει ήδη
+    }
+  
+    // Αν δεν υπάρχει, κάνε insert
+    const { data, error } = await supabase
+      .from('matches')
+      .insert({
+        h_Team: home_Team,
+        a_Team: away_Team,
+        home_Image: home_Image,
+        away_Image: away_Image,
+        time: time,
+      });
+  
+    if (error) {
+      console.error('Error inserting match:', error);
+    } else {
+      console.log('Match inserted successfully:', data);
+    }
+  }
+  useEffect(() => {
+    
+    if(matchesApi.matches)
+    {
+     
+     matchesApi.matches.map(match => {
+      const homeTeam = match.homeTeam.shortName
+      const awayTeam = match.awayTeam.shortName
+      const homeImage = match.homeTeam.crest
+      const awayImage = match.awayTeam.crest
+      const time = match.utcDate
+     // console.log(homeTeam,awayTeam,homeImage,awayImage,format(parseISO(time), 'dd/MM HH:mm'))
+      insert_Match(homeTeam,awayTeam,homeImage,awayImage,format(parseISO(time), 'dd/MM HH:mm'))
+      
+    })
+    }else
+    {
+      console.log('No matches yet');
+    }
+  }, [matchesApi]); // Τρέχει κάθε φορά που αλλάζει το flag
+  async function updateFlag(val)
+  {
+    const { error } = await supabase
+    .from('fetch')
+    .update({ fetchFlag: val })
+    .eq('id', 1);
+    
+  }
+  const fetchMatches = async () => {
+    try {
+      const response = await fetch("/api/matches", {
+        method: "GET",
+        headers: {
+          "X-Auth-Token": "545e7fc4e4854d149dc252050ebce396",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMatchesApi(data);
+      } else {
+        console.error("HTTP error:", response.status);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
+
+
    useEffect(() => {
     if (error) {
       const timeout = setTimeout(() => {
@@ -161,6 +282,7 @@ function App() {
     fetch_Balance(data.user)
     fetch_Istoriko(data.user)
     fetch_Katatakseis()
+    fetchFlagFromTable()
     }
     else if(error)
     {
@@ -664,34 +786,44 @@ function App() {
        
         {/*Matches body */}
         
-        <div className="bg-white w-[79%]  h-fit  rounded-lg ml-4  mt-2">
+        <div className="bg-white w-[79%]  h-fit max-h-[92%]    overflow-y-auto rounded-lg ml-4  mt-2 ">
           
           { matches_Display && banner_Soixima && (
             matches_Display
             .sort((a, b) => {
-              // Συνδυασμός ημερομηνίας και ώρας σε αντικείμενα Date
-              const currentYear = new Date().getFullYear();
-              const dateA = new Date(`${currentYear}-${a.date.split('/').reverse().join('-')}T${a.time}`);
-              const dateB = new Date(`${currentYear}-${b.date.split('/').reverse().join('-')}T${b.time}`);
-              return dateA - dateB; // Σειρά από παλιότερα σε πιο πρόσφατα
+              // Διαχωρισμός και μετατροπή της μορφής DD/MM HH:mm σε Date
+              const [dayA, monthA] = a.time.split(' ')[0].split('/'); // Παίρνουμε DD/MM
+              const timeA = a.time.split(' ')[1]; // Παίρνουμε HH:mm
+              const dateA = new Date(`2025-${monthA}-${dayA}T${timeA}:00`); // Ανασύνθεση σε YYYY-MM-DDTHH:mm:ss
+        
+              const [dayB, monthB] = b.time.split(' ')[0].split('/');
+              const timeB = b.time.split(' ')[1];
+              const dateB = new Date(`2025-${monthB}-${dayB}T${timeB}:00`);
+        
+              // Σύγκριση για ταξινόμηση
+              return dateA - dateB;
             })
-            .map(match => (
+            .map((match,index) => (
               
-          <div className=" w-full h-13 flex p-4 border-b ">
-            <div className=" h-full w-[15%] flex-col " >
-              <div>
-                {match.date}
-              </div>
-              <div>
-                {match.time}
+          <div key={index} className=" w-full h-13 flex p-4 border-b ">
+            <div className=" h-full w-[15%] flex-col mt-3  " >
+              
+              <div className=''>
+             {match.time}
               </div>
             </div>
-            <div className=" h-full w-[25%] flex-col " >
-              <div>
-                {match.h_Team}
+            <div className=" h-full w-[25%] flex-col  space-y-1" >
+              <div className='flex  justify-left ml-28'>
+                <div className=' w-fit h-fit '>
+                  <img src={match.home_Image} className="w-5  h-5 mt-1" />
+                </div>
+                <div className="text-lg">{match.h_Team}</div>
               </div>
-              <div>
-                {match.a_Team}
+              <div className='flex  justify-left ml-28'>
+                <div className=' w-fit h-fit'>
+                  <img src={match.away_Image} className="w-5  h-5 mt-1" />
+                </div>
+                <div className="text-lg">{match.a_Team}</div>
               </div>
             </div>
             <div className="text-sm h-full w-[20%] flex-col " >
@@ -750,6 +882,7 @@ function App() {
           </div>
           
           )))}
+          
        {/*History Body*/}
 {banner_Istoriko && (
   <div className="w-full h-full rounded-lg flex flex-row flex-wrap overflow-y-auto justify-start">
