@@ -522,14 +522,17 @@ function App() {
     }
   
     let wins=0
-    
+    let apodoseis=0
 
     newBetListIstoriko.map(bet => {
-      if(bet.bet_Status===true) {wins++}
+      if(bet.bet_Status===true) {
+        wins++
+        apodoseis+=bet.bet_Odd
+      } 
 
 
     })
-    update_Pososta(wins,newBetListIstoriko.length)
+    update_Pososta(wins,newBetListIstoriko.length,apodoseis)
     // 1δ) Ενημερώνουμε ΤΟ state (χωρίς push/splice)
     set_Bet_List_Istoriko(newBetListIstoriko);
     
@@ -568,7 +571,7 @@ function App() {
    
    
   }
-  async function update_Pososta(wins, matches) {
+  async function update_Pososta(wins, matches,apodoseis) {
     const { data: { user } } = await supabase.auth.getUser();
   
     const pososto = matches  > 0  ? ((wins / matches) * 100).toFixed(2) : 0.00;
@@ -578,7 +581,8 @@ function App() {
       .update({
         bet_Wins: wins,
         bet_Length: matches,
-        pososto: pososto
+        pososto: pososto,
+        apodoseis: apodoseis
       })
       .eq('id', user.id);
   
@@ -1057,16 +1061,25 @@ function App() {
           <div className="border-r-2  w-[13%] border-gray-200 pr-2 my-2">Όνομα Χρήστη</div>
           <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Νίκες/Στοιχήματα</div>
           <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Ποσοστό Επιτυχίας</div>
+          <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">Σύνολο αποδόσεων</div>
         </div>
         
           {katatakseis
-          .sort((a, b) => b.pososto - a.pososto)
+           .sort((a, b) => {
+            // Πρώτα κριτήριο: apodoseis
+            if (b.apodoseis !== a.apodoseis) {
+              return b.apodoseis - a.apodoseis;
+            }
+            // Δεύτερο κριτήριο: pososto
+            return b.pososto - a.pososto;
+          })
           .map((katataksi,index) => (
             <div key={index} className="flex  w-full h-full space-x-4 justify-center  border-b border-gray-300">
               <div className="border-r-2 border-l-2 w-[8%] border-gray-200 pr-2 my-2">{index + 1}</div>
               <div className="border-r-2  w-[13%] border-gray-200 pr-2 my-2">{katataksi.display}</div>
               <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.bet_Wins}/{katataksi.bet_Length}</div>
               <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.pososto}%</div>
+              <div className="border-r-2 w-[13%] border-gray-200 pr-2 my-2">{katataksi.apodoseis || "0.00"}</div>
             </div>
           ))}
         </div>
