@@ -58,6 +58,17 @@ function App() {
    }) 
 
 
+   useEffect(() => {
+    console.log('Flag:', flag);
+    
+    if(flag === true)
+    {
+      fetchMatches2();
+      setFlag(false)
+      updateFlag(false)
+      fetch_Games2()
+    }
+  }, [flag]); // Τρέχει κάθε φορά που αλλάζει το flag
   
    const fetchFlagFromTable = async () => {
     const { data, error } = await supabase
@@ -73,21 +84,38 @@ function App() {
   };
 
   
-
+const fetchWithTimeout = (url, options, timeout = 120000) => {
+    return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Request timeout")), timeout))
+    ]);
+};
 
   // Παρακολούθηση matchesApi και flag
-  useEffect(() => {
-    console.log('Flag:', flag);
-    
-    if(flag === true)
-    {
-      fetchMatches();
-      setFlag(false)
-      updateFlag(false)
-      fetch_Games2()
+  
+  const fetchMatches2 = async () => {
+    try {
+      const response = await fetch("https://humorous-newt-supposedly.ngrok-free.app/results", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        timeout: 10000
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        setMatchesApi(data);
+      
+      } else {
+        console.error("HTTP error:", response.status);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
     }
-  }, [flag]); // Τρέχει κάθε φορά που αλλάζει το matchesApi
-  async function insert_Match(home_Team, away_Team, home_Image, away_Image, time) {
+  };
+  async function insert_Match(home_Team, away_Team, home_Image, away_Image, time,status,asos_Odd,diplo_Odd,over25_Odd,under25_Odd,gg_Odd,ng_Odd,x_Odd,home,away) {
     // Έλεγχος αν υπάρχει ήδη ο αγώνας
     const { data: existingMatch, error: fetchError } = await supabase
       .from('matches')
@@ -104,10 +132,12 @@ function App() {
   
     if (existingMatch) {
       console.log('Match already exists:', existingMatch);
+      fetch_Games2()
       return; // Σταματάει η διαδικασία αν υπάρχει ήδη
     }
-  
+    console.log(asos_Odd,diplo_Odd,over25_Odd,under25_Odd,gg_Odd,ng_Odd,x_Odd)
     // Αν δεν υπάρχει, κάνε insert
+    
     const { data, error } = await supabase
       .from('matches')
       .insert({
@@ -116,63 +146,94 @@ function App() {
         home_Image: home_Image,
         away_Image: away_Image,
         time: time,
+        status:status,
+        asos_Odd: asos_Odd,
+        diplo_Odd: diplo_Odd,
+        over25_Odd: over25_Odd,
+        under25_Odd: under25_Odd,
+        gg_Odd: gg_Odd,
+        ng_Odd: ng_Odd,
+        x_Odd: x_Odd,
+        home: home!=="-" ? home : null,
+        away: away!=="-" ? away : null,
+        match_End: status==="finished" ? true : false
+
       });
   
     if (error) {
       console.error('Error inserting match:', error);
     } else {
       console.log('Match inserted successfully:', data);
+      fetch_Games2()
     }
-  }
+  } 
   useEffect(() => {
     
-    if(matchesApi.matches)
+   // if(matchesApi.matches)
     {
-     
-     matchesApi.matches.map(match => {
-      const homeTeam = match.homeTeam.shortName
-      const awayTeam = match.awayTeam.shortName
-      const homeImage = match.homeTeam.crest
-      const awayImage = match.awayTeam.crest
-      const time = match.utcDate
-      const home= match.score.fullTime.home
-      const away = match.score.fullTime.away
-     // console.log(homeTeam,awayTeam,homeImage,awayImage,format(parseISO(time), 'dd/MM HH:mm'))
-      insert_Match(homeTeam,awayTeam,homeImage,awayImage,format(parseISO(time), 'dd/MM HH:mm'))
-      if(home !== null && away !== null)
-      {
-        update_Score(home,away,homeTeam,awayTeam)
-      }
-      
+      matchesApi.map(match => {
+        const homeTeam = match.home_team
+        const awayTeam = match.away_team
+        const homeImage = match.home_team_icon
+        const awayImage = match.away_team_icon
+        const time = match.date + " " + match.time
+        const home= match.home_score
+        const away = match.away_score
+        const status = match.status
+        const asos = (match.odds.odds_1x2.home).toFixed(2)
+        const diplo = (match.odds.odds_1x2.away).toFixed(2)
+        const draw = (match.odds.odds_1x2.draw).toFixed(2)
+        const over25 = (match.odds.odds_over_under.over).toFixed(2)
+        const under25 = (match.odds.odds_over_under.under).toFixed(2)
+        const gg = (match.odds.odds_ggng.gg).toFixed(2)
+        const ng = (match.odds.odds_ggng.ng).toFixed(2)
+        insert_Match(homeTeam,awayTeam,homeImage,awayImage,time,status,asos,diplo,over25,under25,gg,ng,draw,home,away)
+        if(home !== "-" && away !== "-" )
+        {
+          update_Score(home,away,homeTeam,awayTeam,status)
+        }
+       console.log(match)
+        
     })
-    }else
-    {
-      console.log('No matches yet');
-    }
+    
+  }
+     
+    
   }, [matchesApi]); // Τρέχει κάθε φορά που αλλάζει το flag
-  async function update_Score(home,away,homeTeam,awayTeam)
+  async function update_Score(home,away,homeTeam,awayTeam,flag)
   {
+    
     const {error} = await supabase
     .from('matches')
-    .update({ home: home, away: away, match_End: true })
+    .update({ home: home, away: away})
     .eq('h_Team', homeTeam)
     .eq('a_Team', awayTeam)
     
-    if(home>away)
+    
+    if(flag==="finished")
+      {
+        const {error} = await supabase
+        .from('matches')
+        .update({match_End: true})
+        .eq('h_Team', homeTeam)
+        .eq('a_Team', awayTeam)
+      }
+
+    if(home>away && flag==="finished")
     {
       const {error} = await supabase
       .from('matches')
       .update({ asos_Result: true })
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
-    }else if(home<away)
+    }else if(home<away && flag==="finished")
     {
       const {error} = await supabase
       .from('matches')
       .update({ diplo_Result: true })
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
-    }else if(home===away)
+    }else if(home===away && flag==="finished")
     {
       const {error} = await supabase
       .from('matches')
@@ -180,14 +241,14 @@ function App() {
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
     }
-    if(home + away > 2.5)
+    if(home + away > 2.5 && flag==="finished")
     {
       const {error} = await supabase
       .from('matches')
       .update({ over25_Result: true })
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
-    }else if(home + away < 2.5)
+    }else if(home + away < 2.5 && flag==="finished")
     {
       const {error} = await supabase
       .from('matches')
@@ -195,14 +256,17 @@ function App() {
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
     }
-    if(home > 0 && away > 0)
+    console.log((home > 0 || away > 0) && flag==="finished")
+    if(home > 0 && away > 0 && flag==="finished")
     {
+      console.log("gg")
       const {error} = await supabase
       .from('matches')
       .update({ gg_Result: true })
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
-    }else if(home === 0 || away === 0)
+    }
+    else
     {
       const {error} = await supabase
       .from('matches')
@@ -210,6 +274,7 @@ function App() {
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
     }
+    
   }
   async function updateFlag(val)
   {
@@ -227,9 +292,10 @@ function App() {
             "X-Auth-Token": "545e7fc4e4854d149dc252050ebce396",
         },
     });
-
+      
       if (response.ok) {
         const data = await response.json();
+        console.log(data)
         setMatchesApi(data);
         
       } else {
@@ -351,6 +417,7 @@ function App() {
     fetch_Istoriko(data.user)
     fetch_Katatakseis()
     fetchFlagFromTable()
+    
     }
     else if(error)
     {
@@ -882,8 +949,10 @@ function App() {
             <div className=" h-full w-[15%] flex-col mt-3  " >
               
               <div className=''>
-             {match.time}
+             {match.status === 'live' ? "LIVE" : match.time}
+             
               </div>
+              {match.home}-{match.away}
             </div>
             <div className=" h-full w-[25%] flex-col  space-y-1" >
               <div className='flex  justify-left ml-28'>
@@ -909,9 +978,9 @@ function App() {
               
               <div className=" h-7 flex justify-around  border-r">
                 
-                <Button onClick={handle_Odd_Button} id={match.id} name="asos" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.asos_Odd).toFixed(2)}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="x" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.x_Odd).toFixed(2)}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="diplo" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.diplo_Odd).toFixed(2)}</Button>
+                <Button disabled={match.status === 'live'} onClick={handle_Odd_Button} id={match.id} name="asos" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.asos_Odd).toFixed(2)}</Button>
+                <Button disabled={match.status === 'live'} onClick={handle_Odd_Button} id={match.id} name="x" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.x_Odd).toFixed(2)}</Button>
+                <Button disabled={match.status === 'live'} onClick={handle_Odd_Button} id={match.id} name="diplo" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.diplo_Odd).toFixed(2)}</Button>
               </div>
               
               
@@ -926,8 +995,8 @@ function App() {
               
               
               <div className=" h-7 flex  justify-around">
-                <Button onClick={handle_Odd_Button} id={match.id} name="over25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.over25_Odd).toFixed(2)}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="under25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.under25_Odd).toFixed(2)}</Button>
+                <Button disabled={match.status === 'live'} onClick={handle_Odd_Button} id={match.id} name="over25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.over25_Odd).toFixed(2)}</Button>
+                <Button disabled={match.status === 'live'} onClick={handle_Odd_Button} id={match.id} name="under25" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.under25_Odd).toFixed(2)}</Button>
                 
               </div>
               
@@ -943,8 +1012,8 @@ function App() {
               
               
               <div className=" h-7 flex  justify-around">
-                <Button onClick={handle_Odd_Button} id={match.id} name="gg" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.gg_Odd).toFixed(2)}</Button>
-                <Button onClick={handle_Odd_Button} id={match.id} name="ng" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.ng_Odd).toFixed(2)}</Button>
+                <Button disabled={match.status === 'live'} onClick={handle_Odd_Button} id={match.id} name="gg" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.gg_Odd).toFixed(2)}</Button>
+                <Button disabled={match.status === 'live'} onClick={handle_Odd_Button} id={match.id} name="ng" className="h-7 bg-gray-100 outline-none hover:outline-none hover:border-gray-200 border-gray-200 hover:bg-gray-200  ring-0 focus:ring-0 focus:border-none focus:outline-none text-[#0066cc] font-semibold">{(match.ng_Odd).toFixed(2)}</Button>
                 
               </div>
               
