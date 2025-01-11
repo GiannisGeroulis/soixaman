@@ -84,7 +84,7 @@ function App() {
   };
 
   
-  useEffect(() => {
+ { /*useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch("https://humorous-newt-supposedly.ngrok-free.app/live", {
@@ -120,7 +120,7 @@ function App() {
 
     // Καθάρισμα του interval όταν το component αποσυνδέεται
     return () => clearInterval(interval);
-  }, []); // [] ώστε να τρέχει μόνο μία φορά
+  }, []); */}// [] ώστε να τρέχει μόνο μία φορά
 
   // Παρακολούθηση matchesApi και flag
   async function update_live(home,away,homeTeam,awayTeam,status)
