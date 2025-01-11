@@ -84,15 +84,55 @@ function App() {
   };
 
   
-const fetchWithTimeout = (url, options, timeout = 120000) => {
-    return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Request timeout")), timeout))
-    ]);
-};
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("https://humorous-newt-supposedly.ngrok-free.app/live", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
+          timeout: 10000
+        });
+    
+        if (response.ok) {
+          const data = await response.json();
+          data.map(match => {
+              update_Score(match.home_score,match.away_score,match.home_team,match.away_team,match.status,match.time)
+              fetch_Games2()
+          })
+          
+        
+        } else {
+          console.error("HTTP error:", response.status);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+      }
+    }
+
+    // Κάνε το πρώτο request αμέσως
+    fetchData();
+
+    // Επαναλαμβανόμενο request κάθε 10 δευτερόλεπτα
+    const interval = setInterval(fetchData, 30000);
+
+    // Καθάρισμα του interval όταν το component αποσυνδέεται
+    return () => clearInterval(interval);
+  }, []); // [] ώστε να τρέχει μόνο μία φορά
 
   // Παρακολούθηση matchesApi και flag
-  
+  async function update_live(home,away,homeTeam,awayTeam,status)
+  {
+    const {error} = await supabase
+    .from('matches')
+    .update({ home: home, away: away,status:status})
+    .eq('h_Team', homeTeam)
+    .eq('a_Team', awayTeam)
+  }
+
+
   const fetchMatches2 = async () => {
     try {
       const response = await fetch("https://humorous-newt-supposedly.ngrok-free.app/results", {
@@ -132,10 +172,23 @@ const fetchWithTimeout = (url, options, timeout = 120000) => {
   
     if (existingMatch) {
       console.log('Match already exists:', existingMatch);
+      const { data, error } = await supabase
+      .from('matches')
+      .update({
+        asos_Odd: asos_Odd,
+        diplo_Odd: diplo_Odd,
+        over25_Odd: over25_Odd,
+        under25_Odd: under25_Odd,
+        gg_Odd: gg_Odd,
+        ng_Odd: ng_Odd,
+        x_Odd: x_Odd,
+      })
+      .eq('h_Team', home_Team)
+      .eq('a_Team', away_Team)
       fetch_Games2()
       return; // Σταματάει η διαδικασία αν υπάρχει ήδη
     }
-    console.log(asos_Odd,diplo_Odd,over25_Odd,under25_Odd,gg_Odd,ng_Odd,x_Odd)
+   
     // Αν δεν υπάρχει, κάνε insert
     
     const { data, error } = await supabase
@@ -188,11 +241,8 @@ const fetchWithTimeout = (url, options, timeout = 120000) => {
         const gg = (match.odds.odds_ggng.gg).toFixed(2)
         const ng = (match.odds.odds_ggng.ng).toFixed(2)
         insert_Match(homeTeam,awayTeam,homeImage,awayImage,time,status,asos,diplo,over25,under25,gg,ng,draw,home,away)
-        if(home !== "-" && away !== "-" )
-        {
-          update_Score(home,away,homeTeam,awayTeam,status)
-        }
-       console.log(match)
+       
+   
         
     })
     
@@ -200,14 +250,15 @@ const fetchWithTimeout = (url, options, timeout = 120000) => {
      
     
   }, [matchesApi]); // Τρέχει κάθε φορά που αλλάζει το flag
-  async function update_Score(home,away,homeTeam,awayTeam,flag)
+  async function update_Score(home,away,homeTeam,awayTeam,flag,time)
   {
     
-    const {error} = await supabase
+    const {data,error} = await supabase
     .from('matches')
-    .update({ home: home, away: away})
+    .update({ home: home, away: away,status:flag,live_time:time})
     .eq('h_Team', homeTeam)
     .eq('a_Team', awayTeam)
+ 
     
     
     if(flag==="finished")
@@ -256,7 +307,6 @@ const fetchWithTimeout = (url, options, timeout = 120000) => {
       .eq('h_Team', homeTeam)
       .eq('a_Team', awayTeam)
     }
-    console.log((home > 0 || away > 0) && flag==="finished")
     if(home > 0 && away > 0 && flag==="finished")
     {
       console.log("gg")
@@ -949,11 +999,13 @@ const fetchWithTimeout = (url, options, timeout = 120000) => {
             <div className=" h-full w-[15%] flex-col mt-3  " >
               
               <div className=''>
-             {match.status === 'live' ? "LIVE" : match.time}
+             {match.status === 'live' ? match.live_time + "'" : match.time}
              
               </div>
               {match.home}-{match.away}
+              
             </div>
+            
             <div className=" h-full w-[25%] flex-col  space-y-1" >
               <div className='flex  justify-left ml-28'>
                 <div className=' w-fit h-fit '>
